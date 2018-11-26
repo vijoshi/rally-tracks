@@ -1,0 +1,60 @@
+{% import "rally.helpers" as rally with context %}
+
+{
+  "version": 2,
+  "description": "StackOverflow Q&A stored as nested docs",
+  "indices": [
+    {
+      "name": "sonested",
+      "body": "index.json",
+      "types": ["question"]
+    }
+  ],
+  "corpora": [
+    {
+      "name": "nested",
+      "documents": [
+        {
+          "source-file": "documents_20K.json",
+          "document-count": 20000,
+          "uncompressed-bytes": 6862440 
+        }
+      ]
+    }
+  ],
+ "challenges": [
+    {
+      "name": "index-and-populate",
+      "default": true,
+      "schedule": [
+        {
+          "operation": {
+            "operation-type": "delete-index"
+          }
+        },
+        {
+          "operation": {
+            "operation-type": "create-index"
+          }
+        },
+        {
+          "operation": {
+            "operation-type": "cluster-health",
+            "request-params": {
+              "wait_for_status": "green"
+            }
+          }
+        },
+        {
+          "operation": {
+            "operation-type": "bulk",
+            "bulk-size": 500
+          },
+          "warmup-time-period": 10,
+          "clients": 1 
+        }
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,64 @@
+{% import "rally.helpers" as rally with context %}
+
+{
+  "version": 2,
+  "description": "Taxi rides in New York in 2015",
+  "indices": [
+    {
+      "name": "nyc_taxis",
+      "body": "index.json",
+      "types": ["type"]
+    }
+  ],
+  "corpora": [
+    {
+      "name": "nyc_taxis",
+      "documents": [
+        {
+          "source-file": "documents-1k.json",
+          "#COMMENT": "ML benchmark rely on the fact that the document count stays constant.",
+          "document-count": 1000,
+          "uncompressed-bytes": 499010 
+        }
+      ]
+    }
+  ],
+  "challenges": [
+  {
+      "name": "append-no-conflicts-index-only",
+      "description": "Indexes the whole document corpus using a setup that will lead to a larger indexing throughput than the default settings and produce a smaller index (higher compression rate). Document ids are unique so all index operations are append only.",
+      "schedule": [
+        {
+          "operation": "delete-index"
+        },
+        {
+          "operation": {
+            "operation-type": "create-index",
+            "settings": {%- if index_settings is defined %} {{index_settings | tojson}} {%- else %} {
+              "index.codec": "best_compression",
+              "index.refresh_interval": "30s",
+              "index.translog.flush_threshold_size": "4g"
+            }{%- endif %}
+          }
+        },
+        {
+          "name": "check-cluster-health",
+          "operation": {
+            "operation-type": "cluster-health",
+            "index": "nyc_taxis",
+            "request-params": {
+              "wait_for_status": "{{cluster_health | default('green')}}",
+              "wait_for_no_relocating_shards": "true"
+            }
+          }
+        },
+        {
+          "operation": {
+            "operation-type": "bulk",
+            "bulk-size": 500
+          }
+        }
+      ]
+    }
+  ]
+}
